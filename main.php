@@ -1,8 +1,11 @@
 <?php
-ob_start();
-session_start();
-ini_set('max_execution_time', '3000');
-define('domain', 'http://localhost/naafiun/');
-if (!isset($_SESSION['token'])) {
-    $_SESSION['token'] = md5(time());
-}
+
+define('domain', 'http://localhost/investor_sakib/');
+define('USER', 'root');
+define('DB', 'investor_sakib');
+define('PASS', '');
+include_once 'config/cn.php';
+include_once 'config/Functions.php';
+
+$db = new Functions();
+ 

@@ -3,15 +3,15 @@
 * Connect class
 */
 //
- 
+
 abstract class Cn 
 {
 
 	protected $db;
 	private $host = 'localhost';
-	private $user = USER;
-	private $pass = PASS;
-	private $dbname = DB;
+	private $user = user;
+	private $pass = pass;
+	private $dbname = db;
 
 	function __construct(){
     	$db1 = $this->dbname;
@@ -29,7 +29,7 @@ abstract class Cn
 		}
 		catch(PDOException $e)
 		{ 
-			return false;
+			echo "connection Fail : ".$e->getMessage();
 			//header("Location:setup.php");
 		}
 	}

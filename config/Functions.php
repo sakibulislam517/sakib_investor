@@ -1,9 +1,10 @@
  <?php
- /**
+/**
 * Database Class
 */
 class Functions extends cn
 {
+    use operation;
 	public $lastid;
 	public $rowcount;
 	public $secured;
@@ -16,12 +17,12 @@ class Functions extends cn
 		$ok = 1;
 		if ($ok == 1) {
 			$stmt = $this->db->prepare($sql);
-			$cond =  $stmt->execute();
-			$this->lastid = $this->db->lastInsertid();
-			if($cond == 1){
-				return true;
-			}
-			return false;
+			 $cond =  $stmt->execute();
+			 $this->lastid = $this->db->lastInsertid();
+			 if($cond == 1){
+			 	return true;
+			 }
+			 return false;
 		}else{
 			return false;
 		}
@@ -47,9 +48,7 @@ class Functions extends cn
 	}
 	public function getAll($table,$where='',$fields = '*')
 	{
-		$sql = "select $fields from $table where id > 0".$where;
-		// echo $sql;
-		$ar = $this->getdata($sql);
+		$ar = $this->getdata("select $fields from $table where id > 0".$where);
 		if ($ar) {
 			return $ar[0];
 		}
@@ -61,7 +60,6 @@ class Functions extends cn
         $ar = $this->getdata("select $fields from $table where id > 0".$where,$rowcount);
 		return $ar;
     }
-
 
 	public function row_count($sql)
 	{
@@ -123,7 +121,31 @@ class Functions extends cn
 
 	}
 
-	public function insert_ar($tablename,$array,$idtype,$val,$oqury=''){
+	
+	public function adddata($tablename,$data){
+		$ok = 1;
+		if ($ok == 1) {
+			$keys = implode(",", array_keys($data));
+			$k = ':'.implode(", :",array_keys($data));
+
+			$sql = "insert into $tablename($keys) values($k)";
+			$stmt = $this->db->prepare($sql);
+			foreach ($data as $key => $value) {
+				$stmt->bindValue($key,$value);
+			}
+			$cond = $stmt->execute();
+			$this->lastid = $this->db->lastInsertId();
+			if($cond == 1){
+				return true;
+			}
+			else{
+				$this->Error = $stmt->errorInfo();
+			}
+		}else{
+			return false;
+		}
+	}
+	public function qedit($tablename,$array,$idtype,$val,$oqury=''){
 		$keys = null;
 		if (!is_numeric($val)) {
 			$val = '"'.$val.'"';
@@ -142,6 +164,440 @@ class Functions extends cn
 		}
 		return $stmt->execute();
 	}
+
+
+
+
+	public function rpost($value,$rep='')
+	{
+		$ar = array();
+		foreach ($value as $key => $val) {
+			if (isset($_POST[$val])) {
+				$pkey = $val;
+				if ($rep != '') {
+					$pkey = str_replace($rep, '', $val);
+				}
+				$ar[$pkey] = $_POST[$val];
+			}
+		}
+		return $ar;
+	}
+
+	public function tokenin($value='')
+	{
+		if (isset($_SESSION['token'])) {
+			$token = $_SESSION['token'];
+		}else{
+			$token = md5(strtotime(date('d-m-y H:i:s')));
+			$_SESSION['token'] = $token;
+		}
+		return '<input type="hidden" name="token" value="'.$token.'">';
+	}
+
+	public function check_token()
+	{
+		if (isset($_POST['token']) and isset($_SESSION['token'])) {
+			if ($_SESSION['token'] == $_POST['token']) {
+				return 1;
+			}else{
+				return 0;
+			}
+		}else{
+			return 0;
+		}
+	}
+	public function unset_ses($value)
+	{
+		if (isset($_SESSION[$value])) {
+			unset($_SESSION[$value]);
+		}
+	}
+
+
+
+
+
+
+
+	public function getm($mname,$url='')
+	{
+		if ($url == '') {
+			$url = $_SERVER['REQUEST_URI'];
+		}
+		$parts = parse_url($url);
+		if (isset($parts['query'])) {
+			parse_str($parts['query'], $query);
+			if (isset($query[$mname])) {
+				return $query[$mname];
+			}else{
+				return false;
+			}
+		}else{
+			return false;
+		}
+		
+		
+	}
+	public function getip(){
+	    if(!empty($_SERVER['HTTP_CLIENT_IP'])){
+	        //ip from share internet
+	        $ip = $_SERVER['HTTP_CLIENT_IP'];
+	    }elseif(!empty($_SERVER['HTTP_X_FORWARDED_FOR'])){
+	        //ip pass from proxy
+	        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	    }else{
+	        $ip = $_SERVER['REMOTE_ADDR'];
+	    }
+	    return $ip;
+	}
+
+
+
+
+	public function logout()
+	{
+		if (isset($_SESSION)) {
+			session_destroy();
+			foreach ($_SESSION as $key => $value) {
+				unset($_SESSION[$value]);
+			}
+		}
+	}
+
+
+
+	public function render_body($db){
+	    $pg = 'dashboard';
+	    if(isset($_GET['e'])){
+			$url = $_GET['e'];
+			$url = rtrim($url,"/");
+			$url = explode("/", $url);
+			if ($url[0] == 'logout') {
+				session_destroy();
+				$this->redirect(domain.'login');
+			}
+	        if(file_exists('pages/'.$url[0].'.php')){
+	            $pg = $url[0];
+	        }else{
+	             $pg = '404';
+	        }
+	    }
+	    if (!$this->is_login()) {
+	    	$pg = 'login';
+	    }
+	    $access = [];$manual = ['login'];
+	    if ($this->is_login()) {
+	      $access = explode(',',$this->getonecol('access','admin','id',$this->uid()));
+	    }
+	    if (!in_array($pg, $manual)) {
+	    	if (!in_array($pg, $access)) {
+	    		$pg = '404';
+	    	}
+	    }
+	    include_once 'pages/header.php';
+	    include_once 'pages/'.$pg.'.php';
+	    include_once 'pages/footer.php';
+	}
+	
+
+
+	public function rpv($value)
+	{
+		if (isset($_POST[$value])) {
+			return $_POST[$value];
+		}else{
+			return '';
+		}
+	}
+
+
+	public function redirect($pg)
+	{
+	    header("Location:".$pg);
+	    exit();
+	}
+
+	public function refpg()
+	{
+	    return $_SERVER['HTTP_REFERER'];
+	}
+	public function en_bn($num,$dismal=0)
+	{
+	    $ok = 1;
+	    if(($num == 0 or $num == '') and $zero_emt == 0){
+	        $ok = 0;
+	    }
+	    if($ok){
+	        return str_replace(['0','1','2','3','4','5','6','7','8','9'],['০','১','২','৩','৪','৫','৬','৭','৮','৯'],$num);
+	    }
+	    return round($num,$dismal);
+	    
+	}
+
+	public function setdate($date)
+	{
+	    return date('d M, Y', strtotime($date));
+	}
+
+
+	public function empty_check($values_ar,$array,$red=true)
+	{   
+	    if(is_array($values_ar)){
+	        foreach($values_ar as $key => $v){
+	            if(isset($array[$key])){
+	                if(trim($array[$key]) == ''){
+	                    $_SESSION['msg'] = $v;
+	                    if($red){
+	                        $this->redirect($this->refpg());
+	                    }
+	                    
+	                }
+	            }
+	        }
+	    }
+	}
+
+	public function getonecol($col, $tbl, $comCol, $comVal) {
+	    $sql = "SELECT $col FROM $tbl WHERE $comCol='$comVal'";
+	    foreach($this->getdata($sql) as $v){
+	        if (isset($v[$col])) {
+	          return $v[$col];
+	        }
+	    }
+	}
+	public function cdate($date="Y-m-d")
+	{
+		$dt = new DateTime('now', new DateTimezone('Asia/Dhaka'));
+	  return $dt->format($date);
+	}
+	public function now()
+	{
+	    return $this->cdate('Y-m-d H:i:s');
+	}
+
+
+	public function is_login()
+	{
+	    if(isset($_SESSION['user_id'])){
+	        return true;
+	    }else{
+	        return false;
+	    }
+	}
+	
+
+	public function uid()
+	{
+	    if(isset($_SESSION['user_id'])){
+	       return $_SESSION['user_id']; 
+	    }
+	}
+
+
+public function token()
+{
+	return '<input type="hidden" name="token" value="'.(isset($_SESSION['token'])?$_SESSION['token']:'').'">';
+}
+	public function set_key($ar,$set_key)
+	{
+		$car = [];
+		foreach ($ar as $key => $v) {
+			if (isset($v[$set_key])) {
+				$car[$v[$set_key]] = $v;
+			}
+		}
+		return $car;
+	}
+	public function get_pg_title($pg_name){
+        return @$this->getAll('pages',' and url = "'.$pg_name.'"')['page_title'];
+    }
+	public function nf($value,$d=2)
+	{
+		$value = !empty($value)?trim($value):0;
+		$value = (float)$value;
+		if ($value != '') {
+			if (is_numeric($value)) {
+				return number_format($value,$d);
+			}else{
+				return ($value);
+			}
+			
+		}
+		
+	}
+	
+	public function ar2v($ar,$index)
+	{
+		if (is_array($ar)) {
+			if (isset($ar[$index])) {
+				return $ar[$index];
+			}
+		}
+	}
+
+	public function input($ar)
+	{
+		/*
+		##Using method
+		view_type => hr means horizental and defoult vertical
+
+		*/
+
+		$class = @$ar['class'].' ';
+		$name = isset($ar['name'])?$ar['name']:'';
+		$value = isset($ar['value'])?$ar['value']:'';
+		$title = isset($ar['title'])?$ar['title']:ucwords($name);
+		$placeholder = isset($ar['placeholder'])?$ar['placeholder']:$title;
+		$col = isset($ar['col'])?$ar['col']:'6';
+		$type = isset($ar['type'])?$ar['type']:'text';
+		$attr = isset($ar['attr'])?$ar['attr']:'';
+		$parent_class = isset($ar['parent_class'])?$ar['parent_class']:'';
+		$parent_attr = isset($ar['parent_attr'])?$ar['parent_attr']:'';
+		$img_folder = isset($ar['img_folder'])?$ar['img_folder']:'';
+		$title_status = isset($ar['title_status'])?$ar['title_status']:1;
+		$view_type = @$ar['view_type'];
+		
+		if (strpos(strtolower($attr), 'required')!==false) {
+			$req_span = ' <span class="red">*</span>';
+		}else{
+			$req_span = '';
+		}
+		
+		if (strpos(strtolower($attr), 'multiple')!==false && $type != 'file') {
+			$multi_status = 1;
+			$value = explode(',',$value);
+		}else{
+			$multi_status = 0;
+		}
+		
+		
+		$no_col = 'col-md-'.$col;
+		if(isset($ar['no_col']) && $ar['no_col'] == 'no'){
+		    $no_col = 'no_col';
+		}
+		$data = '<div class="'.$no_col.' '.$parent_class.'" '.$parent_attr.'>';
+
+    		$data .= $view_type == 'hr'?'<div class="form-group row no-gutters">':'<div class="form-group">';
+    			$data .= $view_type == 'hr'?'<div class="col-md-4">':'';
+    			$data .= $title_status?'<label for="'.$name.'" class="form-label">'.$title.$req_span.'</label>':'';
+    			$data .= $view_type == 'hr'?'</div>':'';
+
+    			$data .= $view_type == 'hr'?'<div class="col-md-8">':'';
+
+    		
+    			if ($type == 'textarea') {
+    				$data .= '<textarea name="'.$name.'" '.$attr.' id="'.$name.'" class="'.$class.'" placeholder="'.$placeholder.'">'.$value.'</textarea>';
+    			}elseif ($type == 'select') {
+    				$data .= '<select name="'.$name.'" '.$attr.' id="'.str_replace(['[',']'],'',$name).'" class="'.$class.'">';
+    				if (isset($ar['blank'])) {
+    					$data .= '<option value="">'.(!empty($ar['blank'])?$ar['blank']:'Select').($title_status==0?' '.$title:'').'</option>';
+    				}
+    				if (isset($ar['blank_value'])) {
+    					$data .= '<option value="'.$ar['blank_value'].'">'.ucwords($ar['blank_value']).'</option>';
+    				}
+    				if (isset($ar['create'])) {
+    					$data .= '<option value="new">'.(!empty($ar['create'])?$ar['create']:'Create New').'</option>';
+    				}
+
+    				if (isset($ar['select_value_type'])) {
+    					foreach ($ar['select_ar'] as $key => $v) {
+    						if ($ar['select_value_type'] == 'value') {
+    							$data .= '<option value="'.$v.'" ';
+		    					
+		    					if($multi_status){
+    	    					    if(in_array($v, $value)){
+    	    					        $data .= 'selected';
+    	    					    }
+    	    					}else{
+    	    					    $data .= $value==$v?'selected':'';
+    	    					}
+		    					
+		    					$data .= '>'.$v.'</option>';
+    						}elseif ($ar['select_value_type'] == 'key_value') {
+    							$data .= '<option value="'.$key.'" ';
+		    					if($multi_status){
+    	    					    if(in_array($key, $value)){
+    	    					        $data .= 'selected';
+    	    					    }
+    	    					}else{
+    	    					    $data .= $value==$key?'selected':'';
+    	    					}
+		    					$data .= '>'.$v.'</option>';
+    						}
+	    				}
+    				}else{
+    					foreach ($ar['select_ar'] as $key => $v) {
+	    					$data .= '<option value="'.$v['id'].'" ';
+	    					if($multi_status){
+	    					    if(in_array($v['id'], $value)){
+	    					        $data .= 'selected';
+	    					    }
+	    					}else{
+	    					    $data .= $value==$v['id']?'selected':'';
+	    					}
+	    					
+	    					
+	    					$data .= isset($ar['select_op_add_attr'])?' data-code="'.$v[$ar['select_op_add_attr']].'"':'';
+	    					$data .= isset($ar['data-attr'])?' data-'.$ar['data-attr'].'="'.$v[$ar['data-attr']].'"':'';
+	    					$data .= '>'.$v['name'].'</option>';
+	    				}
+    				}
+
+    				$data .= '</select>';
+    			}else{
+    				if (strlen($placeholder) > 0) {}else{
+    					$placeholder = !empty($title)?'Enter '.$title:'';
+    				}
+    				$data .= '<input type="'.$type.'" '.(isset($ar['datalist'])?'list="list-'.$name.'"':'').' name="'.$name.'" class="'.$class.'" '.$attr.' id="'.$name.'" value="'.$value.'" placeholder="'.$placeholder.'" />';
+    				
+    				if(isset($ar['datalist'])){
+    				    $data .= '<datalist id="list-'.$name.'">';
+    				    foreach($ar['datalist'] as $l){
+    				        $data .= '<option value="'.$l.'">';
+    				    }
+    				    $data .= '</datalist>';
+    				}
+    			}
+
+    			$data .= $view_type == 'hr'?'</div>':'';
+    			
+    		$data .= '</div>
+    	</div>';
+    	return $data;
+	}
+
+	public function start_modal($title='',$width='650px',$form='<form method="post" enctype="multipart/form-data">',$modal_head=1)
+	{
+		$html = ' 
+		<style>
+	        .modal-dialog {
+		        max-width: '.$width.';
+		    } 
+	    </style>';
+	    if (!empty($title) && $modal_head == 1) {
+	    	$html .= '<div class="modal-header">
+		    <h1 class="modal-title fs-5" id="staticBackdropLabel">'.$title.'</h1>
+		    <button type="button" class="fa fa-times close" data-dismiss="modal" aria-label="Close"></button>
+	  	</div>';
+	    }
+	  if (!empty($form)) {
+	  	$form .= $this->token();	
+	  }
+	  $html .= $form.'
+	  <div class="modal-body">';
+	  return $html;
+	}
+	public function modal_footer($id='',$btn_name='save')
+	{
+		return ' 
+		<div class="modal-footer">
+	    <button type="button" class="btn btn-danger btn-sm" data-dismiss="modal">Close</button>
+	    <input type="hidden" value="'.@$id.'" name="'.$btn_name.'">
+	    <button type="submit" class="btn btn-success btn-sm" value="'.@$id.'" name="'.$btn_name.'">Save</button>
+	  </div>';
+	}
+
+
 
 
 }

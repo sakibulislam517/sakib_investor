@@ -1,11 +1,12 @@
 <?php
+ob_start();
+session_start();
+define('db','sakib');
+define('user','root');
+define('pass','');
+define('domain', 'http://localhost/sakib/');
 
-define('domain', 'http://localhost/investor_sakib/');
-define('USER', 'root');
-define('DB', 'investor_sakib');
-define('PASS', '');
-include_once 'config/cn.php';
-include_once 'config/Functions.php';
-
+spl_autoload_register(function($clsname){
+    include_once 'config/'.$clsname.'.php';
+});
 $db = new Functions();
- 

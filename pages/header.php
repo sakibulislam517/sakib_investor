@@ -12,15 +12,13 @@ $company_ar = $db->getFull('settings','*',' and id = 1')[0];
     <meta name=”robots” content=”noindex”>
     <title><?php echo $company_ar['company_name'];?></title>
     <link rel="shortcut icon" href="images/logo/fab.png" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link
       rel="stylesheet"
       href="assets/plugins/bootstrap/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="assets/plugins/flags/flags.css" />
     <link
       rel="stylesheet"
       href="assets/plugins/fontawesome/css/fontawesome.min.css"
@@ -42,85 +40,17 @@ $company_ar = $db->getFull('settings','*',' and id = 1')[0];
 
   <body>
     <style type="text/css">
-      input[type="checkbox"]{
-        margin: 0;
-        cursor: pointer!important;
-      }
-      .page-wrapper{
-        min-height: unset!important;
-      }
-      .only_print{
-        display: none;
-      }
-      [disabled] {
-          background: #524c7a66;
-          opacity: 0.4;
-      }
-      .text-right{
-        text-align: right!important;
-      }
-      a,button{
-        cursor: pointer!important;
-      }
-      input{
-        cursor: auto!important;
-      }
-      .pg_title {
-          float: left;
-          font-weight: bold;
-          font-size: 20px;
-      }
-      .table tr td{
-        padding: 0.2rem .5rem !important;
-      }
-      .sl_start {
-          counter-reset: my-sec-counter;
-      }
-      .dy_sl::before {
-        counter-increment: my-sec-counter;
-        content: counter(my-sec-counter);
-      }
+      .only_print{ display: none; }
+      .sl_start { counter-reset: my-sec-counter; }
+      .dy_sl::before { counter-increment: my-sec-counter; content: counter(my-sec-counter); }
       @media print {
-        body{
-          background-color: #fff!important;
-        }
-        td,th{
-          font-size: 12px!important;
-        }
-        body {
-          margin: 0!important;
-          padding: 0!important;
-        }
-        .sidebar,.header,.no-print,footer,.card-header,form{
-          display: none!important;
-        }
-        .card,.content,.page-wrapper {
-          margin: 0!important;
-          padding: 0!important;
-          box-shadow: unset!important;
-        }
-        .only_print{
-          display: block!important;
-        }
-
-      }
-      .form-group {
-          margin: 5px 0;
-      }
-      .select2-container .select2-selection--single {
-          height: 38px;
-      }
-      .select2-container--default .select2-selection--single .select2-selection__rendered {
-          line-height: 37px;
-      }
-      .select2-container--default .select2-selection--single .select2-selection__arrow {
-          height: 37px;
-      }
-      .modal-header,.modal-footer {
-          padding: 0.5rem 1rem;
-      }
-      form{
-        margin:0
+        .sidebar,.header,.no-print,.card-header,form,.dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate { display: none !important; }
+        .card,.content,.page-wrapper { margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; }
+        .only_print{ display: block !important; }
+        td,th{ font-size: 12px !important; }
+        body{ background: #fff !important; margin: 0 !important; padding: 0 !important; }
       }
     </style>
     <div class="main-wrapper">

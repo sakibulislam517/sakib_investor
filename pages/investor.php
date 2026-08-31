@@ -15,10 +15,11 @@ $ar = $db->getFull('investor','*',' order by cus_id asc');
     <thead>
       <tr>
         <th style="width:40px">SL</th>
-        <th>ID</th>
         <th>Name</th>
-        <th>Contact No.</th>
-        <th>Commission</th>
+        <th>Number</th>
+        <th>Cus ID</th>
+        <th>Password</th>
+        <th>Address</th>
         <th style="width:100px">Action</th>
       </tr>
     </thead>
@@ -28,17 +29,17 @@ $ar = $db->getFull('investor','*',' order by cus_id asc');
       foreach ($ar as $key => $v) {
         echo '<tr>
         <td class="text-center">'.$s++.'</td>
-        <td class="text-left">'.$v['cus_id'].'</td>
-        <td class="text-center">'.$v['name'].'</td>
+        <td class="text-left">'.$v['name'].'</td>
         <td class="text-center">'.$v['number'].'</td>
-        <td class="text-center">'.$v['commission'].'</td>
+        <td class="text-center">'.$v['cus_id'].'</td>
+        <td class="text-center">'.$v['pass'].'</td>
+        <td class="text-left">'.$v['address'].'</td>
         <td class="text-center">
           <a class="btn btn-primary create_data btn-sm" data-id="'.$v['id'].'"><i class="fas fa-edit"></i></a>
         </td>
       </tr>';
       }
       ?>
-      
     </tbody>
   </table>
 </div>

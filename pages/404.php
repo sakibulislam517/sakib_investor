@@ -1,15 +1,12 @@
-<?php
-
-$url = 'http://62.75.207.39:7790/sendtext?apikey=03080ee6db07c88e&secretkey=8034542d&callerID=1002_asb-00&toUser=01789295203&messageContent=teset sms';
-
-            $curl = curl_init($url);
-            curl_setopt($curl, CURLOPT_URL, $url);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            
-            //for debug only!
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            
-            $resp = curl_exec($curl);
-            curl_close($curl);
-            echo $resp;
+<div class="container text-center py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="error-page">
+        <h1 style="font-size:80px;font-weight:900;color:var(--danger);margin-bottom:0;">404</h1>
+        <h3 class="mb-3">Page Not Found</h3>
+        <p class="text-muted mb-4">The page you are looking for does not exist or you don't have permission to access it.</p>
+        <a href="<?php echo domain;?>" class="btn btn-primary btn-lg">Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>

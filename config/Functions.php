@@ -597,7 +597,213 @@ public function token()
 	  </div>';
 	}
 
+	/* ============= MISSING METHODS ADDED ============= */
 
+	/**
+	 * Get share info (per_share, member_fee) from settings
+	 */
+	public function share_info()
+	{
+		$s = $this->getAll('settings',' and id = 1');
+		return [
+			'per_share' => isset($s['monthly_fee']) ? $s['monthly_fee'] : 0,
+			'member_fee' => isset($s['yearly_fee']) ? $s['yearly_fee'] : 0
+		];
+	}
+
+	/**
+	 * Get payable type options
+	 */
+	public function payable_type()
+	{
+		return ['monthly', 'yearly', 'others'];
+	}
+
+	/**
+	 * Get method dropdown options HTML
+	 */
+	public function get_method_option($where = '', $add_where = '')
+	{
+		$html = '';
+		foreach ($this->getFull('method', '*', ' and parent_id = 0' . $add_where) as $p) {
+			$html .= '<option value="' . $p['id'] . '">' . $p['name'] . '</option>';
+			foreach ($this->getFull('method', '*', ' and parent_id = ' . $p['id']) as $c) {
+				$html .= '<option value="' . $c['id'] . '">-- ' . $c['name'] . '</option>';
+			}
+		}
+		return $html;
+	}
+
+	/**
+	 * Get method list as key => value
+	 */
+	public function method_list()
+	{
+		$list = [];
+		foreach ($this->getFull('method', '*', ' and parent_id = 0') as $p) {
+			$list[$p['id']] = $p['name'];
+			foreach ($this->getFull('method', '*', ' and parent_id = ' . $p['id']) as $c) {
+				$list[$c['id']] = '-- ' . $c['name'];
+			}
+		}
+		return $list;
+	}
+
+	/**
+	 * Get method balance
+	 */
+	public function get_method_balance($method_id = 0)
+	{
+		$where = $method_id > 0 ? ' and method_id = ' . $method_id : '';
+		$ar = $this->getdata('
+			select
+				sum(if(type="collection",amount,0)) as collection,
+				sum(if(type="payment",amount,0)) as payment,
+				sum(if(type="transfer_in",amount,0)) as ins,
+				sum(if(type="transfer_out",amount,0)) as outs
+			from ledger where method_id > 0' . $where
+		);
+		if ($ar && isset($ar[0])) {
+			$b = $ar[0]['collection'] - $ar[0]['payment'] - $ar[0]['outs'] + $ar[0]['ins'];
+			return ['b' => $b, 'data' => $ar[0]];
+		}
+		return ['b' => 0, 'data' => []];
+	}
+
+	/**
+	 * Send SMS
+	 */
+	public function send_sms($mobile, $sms, $member_id = 0)
+	{
+		$api = $this->sms_api();
+		if (empty($api) || empty($mobile)) return 'SMS configuration missing';
+		$mobile = str_replace(['-', ' ', '+'], '', $mobile);
+		$url = 'https://sms.xylub.com/?api=sendSMS&sender_id=asb&message=' . urlencode($sms) . '&number=' . $mobile . '&api_key=' . $api;
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$res = curl_exec($ch);
+		curl_close($ch);
+		return $res;
+	}
+
+	/**
+	 * Get SMS API key from settings
+	 */
+	public function sms_api()
+	{
+		return $this->getonecol('sms_api', 'settings', 'id', 1);
+	}
+
+	/**
+	 * Format customer ID
+	 */
+	public function get_cus_id($cus_id)
+	{
+		return 'ASB-' . $this->set_digit($cus_id, 4);
+	}
+
+	/**
+	 * Format loan ID
+	 */
+	public function get_loan_id($loan_ar)
+	{
+		return 'LN-' . $this->set_digit($loan_ar['id'], 4);
+	}
+
+	/**
+	 * Pad digits
+	 */
+	public function set_digit($num, $digit = 4)
+	{
+		return str_pad($num, $digit, '0', STR_PAD_LEFT);
+	}
+
+	/**
+	 * Get relation list for loan nominees
+	 */
+	public function relation_list()
+	{
+		return [
+			'father' => 'Father',
+			'mother' => 'Mother',
+			'brother' => 'Brother',
+			'sister' => 'Sister',
+			'spouse' => 'Spouse',
+			'son' => 'Son',
+			'daughter' => 'Daughter',
+			'other' => 'Other'
+		];
+	}
+
+	/**
+	 * Convert number to words (BD Taka format)
+	 */
+	public function convertNumberToWord($num = false)
+	{
+		$num = str_replace([',', ' '], '', trim($num));
+		if (!$num) return 'Zero';
+		$num = (float)$num;
+		if (!is_numeric($num)) return 'Zero';
+		$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
+		return $f->format($num);
+	}
+
+	/**
+	 * Upload image file
+	 */
+	public function image_upload($file_input, $target_dir, $max_size = 500000, $file_name = '')
+	{
+		if (!isset($_FILES[$file_input]) || $_FILES[$file_input]['error'] != 0) {
+			return isset($_POST[$file_input]) ? $_POST[$file_input] : '';
+		}
+		if (!is_dir($target_dir)) {
+			mkdir($target_dir, 0777, true);
+		}
+		$file = $_FILES[$file_input];
+		$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+		$allowed = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+		if (!in_array($ext, $allowed)) return '';
+		if ($file['size'] > $max_size) return '';
+		$name = !empty($file_name) ? $file_name : time() . '_' . rand(100, 999) . '.' . $ext;
+		$target = $target_dir . $name;
+		if (move_uploaded_file($file['tmp_name'], $target)) {
+			return $name;
+		}
+		return '';
+	}
+
+	/**
+	 * Send HTTP POST request
+	 */
+	public function send_post($url, $data = [])
+	{
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		$res = curl_exec($ch);
+		curl_close($ch);
+		return $res;
+	}
+
+	/**
+	 * Check if member is logged in (stub — not implemented in this project)
+	 */
+	public function is_mem_login()
+	{
+		return false;
+	}
+
+	/**
+	 * Get member ID from session
+	 */
+	public function mem_id()
+	{
+		return isset($_SESSION['member_id']) ? $_SESSION['member_id'] : 0;
+	}
 
 
 }
